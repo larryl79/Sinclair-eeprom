@@ -99,7 +99,7 @@ for (int addr=0; addr <= 0x3FFF; addr++ ) {    //16K
     ShowAddress(addr);
     wn=0;
     }
-  char databyte=readEEPROM(addr) + 1;
+  char databyte=readEEPROM(addr);
   if (SHOWTEXT) { INTEXT[wn]= databyte; }
   if ( databyte < 16) { Serial.print("0"); }
   Serial.print(databyte, HEX);
