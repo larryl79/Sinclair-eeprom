@@ -3,6 +3,7 @@
 
 #define DEBUG false
 #define SHOWADDR true
+#define SHOWTEXT true
 
 #define Q1 36   // VP, input only pin on ESP32
 #define Q2 39   // VN, input only pin on ESP32
@@ -16,8 +17,9 @@
 #define CE 5   // Chip select #  chip enable pin
 
 
-uint16_t ADDR = 0; 
+uint16_t addr = 0; 
 char DATABITS[8] = { Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8 };
+char INTEXT[16]  = {};
 
 #define SHIFT_DATA 21    // D2 #define SerDat14 21
 #define SHIFT_CLK 18     // D3  SRCLK11
@@ -29,6 +31,16 @@ char DATABITS[8] = { Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8 };
 #include "chipreadwrite.h"
 
 extern byte readEEPROM(int addr);
+
+void ShowAddress(int addr) {
+  if (SHOWADDR) {
+    Serial.print("0x0");
+    if (addr < 0xFF) { Serial.print("00"); }
+    if (addr > 0xFF && addr < 0XFFF) { Serial.print("0"); }
+    Serial.print(addr,HEX);
+    Serial.print(": ");
+  }
+}
 
 /************************************************************** setup ********************************************/
 void setup() {
@@ -45,10 +57,8 @@ void setup() {
   Serial.println(F("START " __FILE__));
   Serial.println();
   
-  //set chipenable
-  setOutputPin(CE,HIGH);
-  //pinMode(CE, OUTPUT);
-  //digitalWrite(CE, HIGH);
+  Serial.print(".");
+  setOutputPin(CE,HIGH); //set chipenable pin on ESP32
   Serial.print(".");
   setOutputPin(SHIFT_DATA, LOW);
   Serial.print(".");
@@ -73,34 +83,34 @@ for (int n = 0; n < 7;  n++ )
 Serial.println("Boot finished.");
 delay(500);
 
- //for (int addr=0; addr < 0x1FFF; addr++ ) {
-  int addr=0;
-  int wn=0;
-    Serial.println();
-    if (SHOWADDR) {
-      Serial.print("0x0");
-      Serial.print(addr,HEX);
-      Serial.print(": ");
-    }
+
+/************************************************************************** program after setup *******************************/
+
+int addr=0;
+int wn=0;
+Serial.println();
+ShowAddress(addr);
+
 //for (int addr=0; addr <= 0x1FFF; addr++ ) {    //8K
 for (int addr=0; addr <= 0x3FFF; addr++ ) {    //16K
   if (wn>=16) {
     Serial.println();
-    if (SHOWADDR) {
-      Serial.print("0x");
-      Serial.print(addr,HEX);
-      Serial.print(": ");
-      }
+    //if (SHOWTEXT) { char intext[16]={""}; }
+    ShowAddress(addr);
     wn=0;
     }
-  char databyte=readEEPROM(addr);
+  char databyte=readEEPROM(addr) + 1;
+  if (SHOWTEXT) { INTEXT[wn]= databyte; }
   if ( databyte < 16) { Serial.print("0"); }
   Serial.print(databyte, HEX);
   Serial.print(" ");
   wn++;
-
+  if ( SHOWTEXT && wn>=16 )
+    {
+    Serial.print("  |  ");
+    Serial.print(INTEXT);
+    }
   } 
-
 }
 
 void loop() {
