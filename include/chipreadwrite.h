@@ -10,4 +10,6 @@ void setChipEnable(unsigned short int enabled);
 void LatchPulse(unsigned short int);
 void setAddr(unsigned int addr);
 byte readEEPROM(int addr);
+void ShowAddress(int addr);
+void ListEEPROM();
 #endif
