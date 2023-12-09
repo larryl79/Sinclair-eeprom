@@ -49,6 +49,7 @@ int _wifiConnectRetry;
 */
    //connect WIfi-Client
    Serial.println("Intit Wifi...    SSID: " + String(CLIENTSSID) + "    Password: " + String(CLIENTPASSWORD));
+   // + String(CLIENTPASSWORD));
    WiFi.setHostname(HOSTNAME);
    WiFi.begin(CLIENTSSID, CLIENTPASSWORD);
    

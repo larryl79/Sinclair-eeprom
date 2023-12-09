@@ -9,10 +9,13 @@ using namespace std;
 void helpmsg();
 void keycommand();
 
-
 extern void listAllFiles();
 extern void ListEEPROM();
 extern void Copy_to_bin_file();
+
+extern bool DEBUG;
+extern bool _ADDRSHOW;
+extern bool _TEXTSHOW;
 
 int incomingByte = 0;
 #endif
@@ -77,6 +80,20 @@ void keycommand()
       Copy_to_bin_file();
     break;
 
+    case '8' :
+      // toggle show address
+      _ADDRSHOW = !_ADDRSHOW;
+      Serial.print("Show ADDR before HEX: ");
+      _ADDRSHOW ? Serial.println("on") : Serial.println("off");
+    break;
+
+    case '9' :
+      // toggle show text
+      _TEXTSHOW = !_TEXTSHOW;
+      Serial.print("Show text after HEX: ");
+      _TEXTSHOW ? Serial.println("on") : Serial.println("off");
+    break;
+
 
     }
   }
@@ -94,4 +111,7 @@ void helpmsg()
   Serial.println();
   Serial.println("1       Dump ROM to console.");
   Serial.println("2       Dump ROM to binary file.");
+  Serial.println("8       Show ADDR before HEX (toggle)");
+  Serial.println("9       Show text after  HEX (toggle)");
+  Serial.println();
 }

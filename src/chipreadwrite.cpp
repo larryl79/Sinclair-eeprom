@@ -1,13 +1,9 @@
 #include <chipreadwrite.h>
 #include <SPIFFS.h>
+#include <SimpleHeartBeat.h>  // Heartbeat led lib
 
-extern short int DEBUG;
-extern short int SHOWADDR;
-extern short int SHOWTEXT;
-char INTEXT[15]  = {};
-
-extern void ShowAddress(int Addr);
-
+extern HeartBeat heartbeat;
+char INTEXT[18]  = {};
 
 #define Q1 36   // VP, input only pin on ESP32
 #define Q2 39   // VN, input only pin on ESP32
@@ -35,7 +31,7 @@ void setOutputPin(unsigned short int a, unsigned short int deflevel) {
   digitalWrite(a, deflevel);
 }
 
-void LatchPulse(unsigned short int pin) {
+void LatchPulse(unsigned short int pin) {   // gives a pulse for a shift register to "execute" your serial data on the parallel side.
   digitalWrite(pin, LOW);
   digitalWrite(pin, HIGH);
   digitalWrite(pin, LOW);
@@ -50,13 +46,14 @@ void setChipEnable(unsigned short int enabled) {
 }
 
 void setAddr(unsigned int addr) {
-    // setChipEnable(true);
-    //shiftOut(SHIFT_DATA, SHIFT_CLK, 1 , 0x0);
-    //shiftOut(SHIFT_DATA, SHIFT_CLK, 1, 0x0);
-    
+    setChipEnable(false);
+        
     // set addrss 1ST, then chipenable
-    shiftOut(SHIFT_DATA, SHIFT_CLK, 1, addr >> 8);
-    shiftOut(SHIFT_DATA, SHIFT_CLK, 1, addr);
+    shiftOut(SHIFT_DATA, SHIFT_CLK, 1 , highByte(addr));
+    shiftOut(SHIFT_DATA, SHIFT_CLK, 1 , lowByte(addr));
+    
+    //shiftOut(SHIFT_DATA, SHIFT_CLK, 1, addr >> 8);
+    //shiftOut(SHIFT_DATA, SHIFT_CLK, 1, addr);
     LatchPulse(SHIFT_LATCH);
     setChipEnable(true);
 }
@@ -72,8 +69,8 @@ return data;
 }
 
 void ShowAddress(int addr) {
-  char charValBuffer[5];
-  if (SHOWADDR) {
+  char charValBuffer[9];
+  if (_ADDRSHOW) {
     Serial.print("");
     Serial.print("0x");
     sprintf(charValBuffer, "%05X", addr);
@@ -85,14 +82,15 @@ void ShowAddress(int addr) {
 
 void ListEEPROM() {
 
-int addr=0;
-int wn=0;
+unsigned int addr=0;
+unsigned short int wn=0;
 
 Serial.println();
-// ShowAddress(addr);
 
 for (int addr=0; addr <= 0x1FFF; addr++ ) {    //8K
 //for (int addr=0x00000000; addr <= 0x00003FFF; addr++ ) {    //16K
+  yield();
+  heartbeat.ledtoggle();
   if (wn == 0) { ShowAddress(addr); }
   
   char databyte=readEEPROM(addr);
@@ -101,8 +99,8 @@ for (int addr=0; addr <= 0x1FFF; addr++ ) {    //8K
   Serial.print(databyte, HEX);                   // print byte in HEX
   Serial.print(" ");
   
-  if ( SHOWTEXT && ( databyte < 16 || databyte > 250 ) ) { INTEXT[wn]= '.'; } else { INTEXT[wn]= databyte; }    // build 16 byte ascii text of bytes
-  if ( SHOWTEXT && wn>=15 ) {      // show ascii text of 16 bytes 
+  if ( _TEXTSHOW && ( databyte < 16 || databyte > 250 ) ) { INTEXT[wn]= '.'; } else { INTEXT[wn]= databyte; }    // build 16 byte ascii text of bytes
+  if ( _TEXTSHOW && wn>=15 ) {      // show ascii text of 16 bytes 
     Serial.print("  |  ");
     Serial.print(INTEXT);
     }
@@ -120,53 +118,51 @@ for (int addr=0; addr <= 0x1FFF; addr++ ) {    //8K
 }
 
 void Copy_to_bin_file() {
-  int addr=0;
-  int wn=0;
+  unsigned int addr=0;
+  unsigned short int wn=0;
 
-Serial.println();
-Serial.println("Copy Chip to file.");
-Serial.println();
-
-SPIFFS.remove("/dump.bin");
-File binfile = SPIFFS.open("/dump.bin", "w+");
-
-if(binfile) {
-  Serial.println("Writing to \"dump.bin\" file.");
   Serial.println();
-  for (int addr=0; addr <= 0x1FFF; addr++ ) {    //8K
-  //for (int addr=0; addr <= 0x3FFF; addr++ ) {    //16K
-  if (wn == 0) { ShowAddress(addr); }
+  Serial.println("Copy Chip to file.");
+  Serial.println();
 
-    char databyte=readEEPROM(addr);
-    binfile.print(char(databyte));
+  SPIFFS.remove("/dump.bin");
+  File binfile = SPIFFS.open("/dump.bin", "w+");
 
-  if ( databyte < 16) { Serial.print("0"); }     // print leading 0 to HEX number if below of 10
-  Serial.print(databyte, HEX);                   // print byte in HEX
-  Serial.print(" ");
-  
-  if ( SHOWTEXT && ( databyte < 16 || databyte > 250 ) ) { INTEXT[wn]= '.'; } else { INTEXT[wn]= char(databyte); }    // build 16 byte ascii text of bytes
-  if ( SHOWTEXT && wn>=15 ) {      // show ascii text of 16 bytes 
-    Serial.print("  |  ");
-    Serial.print(INTEXT);
-    }
-
-  wn++;
-
-  if (wn>=16) {
+  if(binfile) {
+    Serial.println("Writing to \"dump.bin\" file.");
     Serial.println();
-    wn=0;
-    }
+    for (int addr=0; addr <= 0x1FFF; addr++ ) {    //8K
+    //for (int addr=0; addr <= 0x3FFF; addr++ ) {    //16K
+      heartbeat.ledtoggle();
+      yield();
+      if (wn == 0) { ShowAddress(addr); }
 
-  }
- 
+      char databyte=readEEPROM(addr);
+      binfile.print(char(databyte));
+
+      if ( databyte < 16) { Serial.print("0"); }     // print leading 0 to HEX number if below of 10
+      Serial.print(databyte, HEX);                   // print byte in HEX
+      Serial.print(" ");
   
+      if ( _TEXTSHOW && ( databyte < 16 || databyte > 250 ) ) { INTEXT[wn]= '.'; } else { INTEXT[wn]= char(databyte); }    // build 16 byte ascii text of bytes
+      if ( _TEXTSHOW && wn>=15 ) {      // show ascii text of 16 bytes 
+        Serial.print("  |  ");
+        Serial.print(INTEXT);
+      }
+
+    wn++;
+
+    if (wn>=16) {
+      Serial.println();
+      wn=0;
+      }
+    }
   }
   else {
   Serial.println("Error opening \"dump.bin\" for writing.");  
   }
 
 binfile.close();
-
 }
 
 

@@ -1,11 +1,16 @@
 /********************************************************************** FTP Server ***************************************************/
 
 #include <helper_ftp.h>
+#include <SimpleHeartBeat.h>  // Heartbeat led lib
+  extern HeartBeat heartbeat;
 
 FtpServer ftpSrv(21);           //set #define FTP_DEBUG in ESP8266FtpServer.h to see ftp verbose on serial
 
 
+
 void _callback(FtpOperation ftpOperation, unsigned int freeSpace, unsigned int totalSpace){
+    heartbeat.ledtoggle();
+    yield();
   switch (ftpOperation) {
     case FTP_CONNECT:
       Serial.println(F("FTP: Connected!"));
@@ -22,6 +27,8 @@ void _callback(FtpOperation ftpOperation, unsigned int freeSpace, unsigned int t
 };
 
 void _transferCallback(FtpTransferOperation ftpOperation, const char* name, unsigned int transferredSize){
+    heartbeat.ledtoggle();
+    yield();
   switch (ftpOperation) {
     case FTP_UPLOAD_START:
       Serial.println(F("FTP: Upload start!"));
@@ -62,6 +69,8 @@ void listAllFiles()
   File file = root.openNextFile();
   while(file)
     {
+    heartbeat.ledtoggle();
+    yield();
     Serial.print("FILE: ");
     Serial.println(file.name());
     file = root.openNextFile();
