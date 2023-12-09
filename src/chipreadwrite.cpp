@@ -1,4 +1,5 @@
 #include <chipreadwrite.h>
+#include <SPIFFS.h>
 
 extern short int DEBUG;
 extern short int SHOWADDR;
@@ -6,6 +7,7 @@ extern short int SHOWTEXT;
 char INTEXT[15]  = {};
 
 extern void ShowAddress(int Addr);
+
 
 #define Q1 36   // VP, input only pin on ESP32
 #define Q2 39   // VN, input only pin on ESP32
@@ -70,8 +72,9 @@ return data;
 }
 
 void ShowAddress(int addr) {
-  char charValBuffer[6];
+  char charValBuffer[5];
   if (SHOWADDR) {
+    Serial.print("");
     Serial.print("0x");
     sprintf(charValBuffer, "%05X", addr);
     Serial.print(charValBuffer);
@@ -84,7 +87,6 @@ void ListEEPROM() {
 
 int addr=0;
 int wn=0;
-int i =0;
 
 Serial.println();
 // ShowAddress(addr);
@@ -116,3 +118,68 @@ for (int addr=0; addr <= 0x1FFF; addr++ ) {    //8K
 
  Serial.println(); 
 }
+
+void Copy_to_bin_file() {
+  int addr=0;
+  int wn=0;
+
+Serial.println();
+Serial.println("Copy Chip to file.");
+Serial.println();
+
+SPIFFS.remove("/dump.bin");
+File binfile = SPIFFS.open("/dump.bin", "w+");
+
+if(binfile) {
+  Serial.println("Writing to \"dump.bin\" file.");
+  Serial.println();
+  for (int addr=0; addr <= 0x1FFF; addr++ ) {    //8K
+  //for (int addr=0; addr <= 0x3FFF; addr++ ) {    //16K
+  if (wn == 0) { ShowAddress(addr); }
+
+    char databyte=readEEPROM(addr);
+    binfile.print(char(databyte));
+
+  if ( databyte < 16) { Serial.print("0"); }     // print leading 0 to HEX number if below of 10
+  Serial.print(databyte, HEX);                   // print byte in HEX
+  Serial.print(" ");
+  
+  if ( SHOWTEXT && ( databyte < 16 || databyte > 250 ) ) { INTEXT[wn]= '.'; } else { INTEXT[wn]= char(databyte); }    // build 16 byte ascii text of bytes
+  if ( SHOWTEXT && wn>=15 ) {      // show ascii text of 16 bytes 
+    Serial.print("  |  ");
+    Serial.print(INTEXT);
+    }
+
+  wn++;
+
+  if (wn>=16) {
+    Serial.println();
+    wn=0;
+    }
+
+  }
+ 
+  
+  }
+  else {
+  Serial.println("Error opening \"dump.bin\" for writing.");  
+  }
+
+binfile.close();
+
+}
+
+
+/*  example for later create a random name.
+void listAllFiles()
+{
+  File root = SPIFFS.open("/");
+  File file = root.openNextFile();
+  while(file)
+    {
+    Serial.print("FILE: ");
+    Serial.println(file.name());
+    file = root.openNextFile();
+    }
+  }
+  */

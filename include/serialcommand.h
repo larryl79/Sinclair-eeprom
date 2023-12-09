@@ -12,6 +12,7 @@ void keycommand();
 
 extern void listAllFiles();
 extern void ListEEPROM();
+extern void Copy_to_bin_file();
 
 int incomingByte = 0;
 #endif
@@ -39,37 +40,10 @@ void keycommand()
       Serial.println("Reset sensor");
       //sensor_reset();
       break;
-
-    case '+' :
-      //PeopleCount++;
-      Serial.print("One person has entered in the room. People in the room now: ");
-      //Serial.println(PeopleCount);
-      //publishSerialData(PeopleCount);
-      break;
-
-    //case '-' :
-      // if (PeopleCount > 0)
-        //{
-        //PeopleCount--;
-        // Serial.print("One person has exited from the room. People in the room now: ");
-        //Serial.println(PeopleCount);
-        //publishSerialData(PeopleCount);
-        //}
-      break;
-
-    case 'D' :
-      ListEEPROM();
-    break;
-
+  
     case 'l' :
       listAllFiles();
     break;
-
-    
-    case 'c' :
-      //Serial.print("Light: "); 
-    break;
-
 
     case 'I' :
       Serial.print(AP_SSID);
@@ -88,15 +62,22 @@ void keycommand()
       Serial.print("DNS: ");          Serial.println(WiFi.dnsIP());
       Serial.println("");
       break;
-    
-    //case 'T' :
-    //  task_list();
-    //  break;
 
     case 'h' :
     //default:
        helpmsg();
       break;
+
+  case '1' :
+      ListEEPROM();
+    break;
+
+    case '2' :
+      // Dupm Chip and copy to file
+      Copy_to_bin_file();
+    break;
+
+
     }
   }
 }
@@ -111,5 +92,6 @@ void helpmsg()
   Serial.println("I       IP configuration");
   Serial.println("h       this help");
   Serial.println();
-  Serial.println("D       Dump ROM to console");
+  Serial.println("1       Dump ROM to console.");
+  Serial.println("2       Dump ROM to binary file.");
 }

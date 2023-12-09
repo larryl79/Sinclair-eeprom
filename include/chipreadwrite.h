@@ -12,4 +12,5 @@ void setAddr(unsigned int addr);
 byte readEEPROM(int addr);
 void ShowAddress(int addr);
 void ListEEPROM();
+void Copy_to_bin_file();
 #endif
